@@ -19,15 +19,15 @@ app.set('view engine', 'ejs');
 app.set('views', 'views');
 
 app.use(express.urlencoded({ extended: true })); //we are pursing the request body
-app.use(session({secret: 'notagoodsecret'}))
+app.use(session({ secret: 'notagoodsecret' }))
 
 const requireLogin = (req, res, next) => {
-    if(!req.session.user_id){
+    if (!req.session.user_id) {
         res.redirect('/login')
     }
     next();
 }
-    
+
 
 app.get('/', (req, res) => {
     res.send("THIS IS THE HOME PAGE")
@@ -39,11 +39,8 @@ app.get('/register', (req, res) => {
 
 app.post('/register', async (req, res) => {
     const { password, username } = req.body;
-    const hash = await bcrypt.hash(password, 12);
-    const user = new User({
-        username,
-        password: hash
-    })
+    // const hash = await bcrypt.hash(password, 12);
+    const user = new User({ username, password })
     await user.save();
     req.session.user_id = user._id;
     res.redirect('/')
@@ -52,15 +49,16 @@ app.post('/register', async (req, res) => {
 app.get('/login', (req, res) => {
     res.render('login')
 })
-app.post('/login', async(req, res) => {
+app.post('/login', async (req, res) => {
     const { username, password } = req.body;
-    const user = await User.findOne({ username });
-    const validPassword = await bcrypt.compare(password, user.password)
-    if(validPassword){
-        req.session.user_id = user._id;
+    const foundUser = await User.findAndValidate(username, password)
+    // const user = await User.findOne({ username });
+    // const validPassword = await bcrypt.compare(password, user.password)  //これの代わりが上の行　use.js参照
+    if (foundUser) {
+        req.session.user_id = foundUser._id;
         res.redirect('/secret');
-    } 
-    else{
+    }
+    else {
         res.redirect('/login')
     }
 })
